@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/agnivade/levenshtein"
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dgraph-io/badger/v4"
@@ -128,7 +129,8 @@ func set(cmd *cobra.Command, args []string) error {
 }
 
 //nolint:wrapcheck
-func get(_ *cobra.Command, args []string) error {
+func get(cmd *cobra.Command, args []string) error {
+	copyToClipboard := cmd.Flags().Lookup("clipboard").Changed
 	k, n, err := keyParser(args[0])
 	if err != nil {
 		return err
@@ -148,6 +150,12 @@ func get(_ *cobra.Command, args []string) error {
 		return err
 	}); err != nil {
 		return err
+	}
+	if copyToClipboard {
+		err = clipboard.WriteAll(string(v))
+		if err != nil {
+			return err
+		}
 	}
 	printFromKV("%s", v)
 	return nil
@@ -415,6 +423,7 @@ func init() {
 	listCmd.Flags().StringVarP(&delimiterIterate, "delimiter", "d", "\t", "delimiter to separate keys and values")
 	listCmd.Flags().BoolVarP(&showBinary, "show-binary", "b", false, "print binary values")
 	getCmd.Flags().BoolVarP(&showBinary, "show-binary", "b", false, "print binary values")
+	getCmd.Flags().BoolVarP(&showBinary, "clipboard", "c", false, "copy value to the clipboard")
 
 	rootCmd.AddCommand(
 		getCmd,
